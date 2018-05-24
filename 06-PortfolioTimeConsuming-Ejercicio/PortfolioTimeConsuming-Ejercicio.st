@@ -1260,12 +1260,17 @@ Object subclass: #Promise
 	poolDictionaries: ''
 	category: 'PortfolioTimeConsuming-Ejercicio'!
 
-!Promise methodsFor: 'as yet unclassified' stamp: 'ps 5/21/2018 20:48:04'!
+!Promise methodsFor: 'as yet unclassified' stamp: 'ps 5/24/2018 15:57:31'!
 initializeExecute: aClosure
 	semaphore := Semaphore new.
 	[aClosure value. semaphore signal] fork.
-	^semaphore.	
+	^self.	
 	
+! !
+
+!Promise methodsFor: 'as yet unclassified' stamp: 'ps 5/24/2018 15:57:56'!
+wait
+	semaphore wait.
 ! !
 
 "-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
