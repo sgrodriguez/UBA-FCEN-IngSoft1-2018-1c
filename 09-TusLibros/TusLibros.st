@@ -82,6 +82,64 @@ test06CannotAddAnInvalidNumberOfTheSameItem
 			self assert: anError messageText equals: Cart canOnlyAddAPositiveIntegerQuantityOfAnItemErrorMessage ].! !
 
 
+!classDefinition: #TestCashier category: #TusLibros!
+TestCase subclass: #TestCashier
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'TusLibros'!
+
+!TestCashier methodsFor: 'Testing' stamp: 'ps 6/7/2018 20:49:28'!
+test01CannotCheckoutEmptyCart
+	
+	|cajere precios carrito catalogo item1 item2 tarjeta|
+	item1 := 'item1'.
+	item2 := 'item2'.
+	catalogo := #(item1 item2).
+	carrito := Cart acceptingItemsOf: catalogo.
+	tarjeta := 'tarjeta'.	
+	precios := Dictionary new.
+	precios at: item1 put: 1.
+	precios at: item2 put: 2.
+	cajere := Cashier with: precios.
+	
+	self should: [cajere checkout: carrito with: tarjeta . self fail] raise: Error withExceptionDo: [ :anError | ^self assert: anError messageText equals: Cashier cannotCheckoutEmptyCartErrorMessage]! !
+
+!TestCashier methodsFor: 'Testing' stamp: 'ps 6/7/2018 20:49:18'!
+test02CashierShouldNotBeAbleToCheckoutACartPayingWithAnInvalidCreditCard
+	
+	|cajere precios carrito catalogo item1 item2 tarjeta|
+	
+	item1 := 'item1'.
+	item2 := 'item2'.
+	catalogo := #(item1 item2).
+	carrito := Cart acceptingItemsOf: catalogo.
+	tarjeta := Date yesterday .	
+	precios := Dictionary new.
+	precios at: item1 put: 1.
+	precios at: item2 put: 2.
+	cajere := Cashier with: precios.
+	carrito add: item1.
+	self should: [cajere checkout: carrito with: tarjeta . self fail] raise: Error withExceptionDo: [ :anError | ^self assert: anError messageText equals: Cashier cannotCheckoutACartWithAnInvalidCreditCardErrorMessage]! !
+
+!TestCashier methodsFor: 'Testing' stamp: 'ps 6/7/2018 21:01:10'!
+test03CashierShouldBeAbleToSumThePricesOfTheItemsInTheCart
+	
+	|cajere precios carrito catalogo item1 item2 tarjeta|
+	item1 := 'item1'.
+	item2 := 'item2'.
+	catalogo := #(item1 item2).
+	carrito := Cart acceptingItemsOf: catalogo.
+	tarjeta := Date tomorrow.	
+	precios := Dictionary new.
+	precios at: item1 put: 1.
+	precios at: item2 put: 2.
+	cajere := Cashier with: precios.
+	carrito add: item1.
+	carrito add: item2.	
+	^self assert: (cajere checkout: carrito with: tarjeta) equals: 3. ! !
+
+
 !classDefinition: #Cart category: #TusLibros!
 Object subclass: #Cart
 	instanceVariableNames: 'items catalog'
@@ -149,3 +207,47 @@ canOnlyAddAPositiveIntegerQuantityOfAnItemErrorMessage
 !Cart class methodsFor: 'error messages' stamp: 'ps 6/7/2018 18:05:55'!
 canOnlyAddItemsFromCatalogErrorMessage
  ^ 'Solo se puede agregar items contenidos en el catalogo.'! !
+
+
+!classDefinition: #Cashier category: #TusLibros!
+Object subclass: #Cashier
+	instanceVariableNames: 'pricings'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'TusLibros'!
+
+!Cashier methodsFor: 'initialize' stamp: 'ps 6/7/2018 21:03:34'!
+checkout: aCart with: aCreditCard
+	aCart isEmpty ifTrue:[^ self error: self class cannotCheckoutEmptyCartErrorMessage ].
+	Date today < aCreditCard ifFalse: [^self error: self class cannotCheckoutACartWithAnInvalidCreditCardErrorMessage ].
+	^ aCart Items inject: 0 into: [:sum :anItem | sum + (self priceOf: anItem)] .! !
+
+!Cashier methodsFor: 'initialize' stamp: 'ps 6/7/2018 19:41:33'!
+initializeWith: aPricingsList
+
+	pricings := aPricingsList .
+! !
+
+
+!Cashier methodsFor: 'accessing' stamp: 'ps 6/7/2018 21:04:07'!
+priceOf: anItem
+	^ pricings at: anItem ! !
+
+"-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
+
+!classDefinition: 'Cashier class' category: #TusLibros!
+Cashier class
+	instanceVariableNames: ''!
+
+!Cashier class methodsFor: 'initialize' stamp: 'ps 6/7/2018 19:41:08'!
+with: aPricingsList
+	^ self new initializeWith: aPricingsList .! !
+
+
+!Cashier class methodsFor: 'error messages' stamp: 'ps 6/7/2018 20:48:45'!
+cannotCheckoutACartWithAnInvalidCreditCardErrorMessage
+	^'No se puede pagar con una tarjeta de credito invalida'! !
+
+!Cashier class methodsFor: 'error messages' stamp: 'ps 6/7/2018 20:49:46'!
+cannotCheckoutEmptyCartErrorMessage
+	^ 'No se puede hacer checkout de un carrito vacio.'! !
