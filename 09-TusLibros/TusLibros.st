@@ -34,16 +34,6 @@ test03CannotAddItemOutsideOfCatalog
 	
 	self should: [	carrito add: 'Item1'. self fail] raise: Error withExceptionDo: [:anError | ^ self assert: anError messageText equals: Cart canOnlyAddItemsFromCatalogErrorMessage ]! !
 
-!TestCart methodsFor: 'testing' stamp: 'ps 6/7/2018 18:35:33'!
-test03SuccefulyAddingItemToCart
-	
-	|carrito catalogo|
-	catalogo := #('Item').
-	carrito := Cart acceptingItemsOf: catalogo.
-	carrito add: 'Item'.
-	
-	self deny: carrito isEmpty.! !
-
 !TestCart methodsFor: 'testing' stamp: 'ps 6/7/2018 18:33:23'!
 test04SuccefulyAddingMultipleItemsToCart
 	
@@ -105,7 +95,7 @@ test01CannotCheckoutEmptyCart
 	
 	self should: [cajere checkout: carrito with: tarjeta . self fail] raise: Error withExceptionDo: [ :anError | ^self assert: anError messageText equals: Cashier cannotCheckoutEmptyCartErrorMessage]! !
 
-!TestCashier methodsFor: 'Testing' stamp: 'ps 6/7/2018 20:49:18'!
+!TestCashier methodsFor: 'Testing' stamp: 'ps 6/11/2018 16:16:31'!
 test02CashierShouldNotBeAbleToCheckoutACartPayingWithAnInvalidCreditCard
 	
 	|cajere precios carrito catalogo item1 item2 tarjeta|
@@ -114,7 +104,7 @@ test02CashierShouldNotBeAbleToCheckoutACartPayingWithAnInvalidCreditCard
 	item2 := 'item2'.
 	catalogo := #(item1 item2).
 	carrito := Cart acceptingItemsOf: catalogo.
-	tarjeta := Date yesterday .	
+	tarjeta := CreditCard validUntil: Date yesterday .	
 	precios := Dictionary new.
 	precios at: item1 put: 1.
 	precios at: item2 put: 2.
@@ -122,15 +112,31 @@ test02CashierShouldNotBeAbleToCheckoutACartPayingWithAnInvalidCreditCard
 	carrito add: item1.
 	self should: [cajere checkout: carrito with: tarjeta . self fail] raise: Error withExceptionDo: [ :anError | ^self assert: anError messageText equals: Cashier cannotCheckoutACartWithAnInvalidCreditCardErrorMessage]! !
 
-!TestCashier methodsFor: 'Testing' stamp: 'ps 6/7/2018 21:01:10'!
-test03CashierShouldBeAbleToSumThePricesOfTheItemsInTheCart
+!TestCashier methodsFor: 'Testing' stamp: 'ps 6/11/2018 16:15:26'!
+test03CashierShouldBeAbleKnowThePriceOfAnItem
+	
+	|cajere precios carrito catalogo item1 item2|
+	item1 := 'item1'.
+	item2 := 'item2'.
+	catalogo := #(item1 item2).
+	carrito := Cart acceptingItemsOf: catalogo.
+	precios := Dictionary new.
+	precios at: item1 put: 1.
+	precios at: item2 put: 2.
+	cajere := Cashier with: precios.
+	carrito add: item1.
+	carrito add: item2.	
+	^self assert: (cajere priceOf: item1) equals: 1. ! !
+
+!TestCashier methodsFor: 'Testing' stamp: 'ps 6/11/2018 16:16:01'!
+test04CashierShouldBeAbleToSumThePricesOfTheItemsInTheCart
 	
 	|cajere precios carrito catalogo item1 item2 tarjeta|
 	item1 := 'item1'.
 	item2 := 'item2'.
 	catalogo := #(item1 item2).
 	carrito := Cart acceptingItemsOf: catalogo.
-	tarjeta := Date tomorrow.	
+	tarjeta := CreditCard validUntil: Date tomorrow.
 	precios := Dictionary new.
 	precios at: item1 put: 1.
 	precios at: item2 put: 2.
@@ -138,6 +144,24 @@ test03CashierShouldBeAbleToSumThePricesOfTheItemsInTheCart
 	carrito add: item1.
 	carrito add: item2.	
 	^self assert: (cajere checkout: carrito with: tarjeta) equals: 3. ! !
+
+
+!classDefinition: #TestCreditCard category: #TusLibros!
+TestCase subclass: #TestCreditCard
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'TusLibros'!
+
+!TestCreditCard methodsFor: 'as yet unclassified' stamp: 'ps 6/11/2018 16:18:22'!
+test01CanCreateCreditCardWithExpirationDate
+	|tarjeta|
+	
+	tarjeta := CreditCard validUntil: Date today.
+	
+	^self assert: tarjeta expirationDate equals: Date today.
+		
+! !
 
 
 !classDefinition: #Cart category: #TusLibros!
@@ -216,10 +240,10 @@ Object subclass: #Cashier
 	poolDictionaries: ''
 	category: 'TusLibros'!
 
-!Cashier methodsFor: 'initialize' stamp: 'ps 6/7/2018 21:03:34'!
+!Cashier methodsFor: 'initialize' stamp: 'ps 6/11/2018 16:13:32'!
 checkout: aCart with: aCreditCard
 	aCart isEmpty ifTrue:[^ self error: self class cannotCheckoutEmptyCartErrorMessage ].
-	Date today < aCreditCard ifFalse: [^self error: self class cannotCheckoutACartWithAnInvalidCreditCardErrorMessage ].
+	Date today < (aCreditCard expirationDate) ifFalse: [^self error: self class cannotCheckoutACartWithAnInvalidCreditCardErrorMessage ].
 	^ aCart Items inject: 0 into: [:sum :anItem | sum + (self priceOf: anItem)] .! !
 
 !Cashier methodsFor: 'initialize' stamp: 'ps 6/7/2018 19:41:33'!
@@ -251,3 +275,29 @@ cannotCheckoutACartWithAnInvalidCreditCardErrorMessage
 !Cashier class methodsFor: 'error messages' stamp: 'ps 6/7/2018 20:49:46'!
 cannotCheckoutEmptyCartErrorMessage
 	^ 'No se puede hacer checkout de un carrito vacio.'! !
+
+
+!classDefinition: #CreditCard category: #TusLibros!
+Object subclass: #CreditCard
+	instanceVariableNames: 'till'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'TusLibros'!
+
+!CreditCard methodsFor: 'as yet unclassified' stamp: 'ps 6/11/2018 16:12:03'!
+expirationDate
+	^till! !
+
+!CreditCard methodsFor: 'as yet unclassified' stamp: 'ps 6/11/2018 16:10:26'!
+initializeValidUntil: aDate
+	till := aDate! !
+
+"-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
+
+!classDefinition: 'CreditCard class' category: #TusLibros!
+CreditCard class
+	instanceVariableNames: ''!
+
+!CreditCard class methodsFor: 'as yet unclassified' stamp: 'ps 6/11/2018 16:10:47'!
+validUntil: aDate
+	^self new initializeValidUntil: aDate! !
