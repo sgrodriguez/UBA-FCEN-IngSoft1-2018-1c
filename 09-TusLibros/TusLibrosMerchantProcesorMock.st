@@ -109,10 +109,18 @@ TestCase subclass: #CashierTest
 debit: anAmount from: aCreditCard
 	^ response value! !
 
+!CashierTest methodsFor: 'as yet unclassified' stamp: 'ps 6/14/2018 14:57:10'!
+notEnoughCreditErrorMessage
+^ 'No tiene credito suficeinte'! !
+
 !CashierTest methodsFor: 'as yet unclassified' stamp: 'HernanWilkinson 6/17/2013 18:11'!
 setUp 
 
 	testObjectsFactory := StoreTestObjectsFactory new.! !
+
+!CashierTest methodsFor: 'as yet unclassified' stamp: 'ps 6/14/2018 15:04:40'!
+stolenCardErrorMessage
+^ 'La tarjeta es robada'! !
 
 !CashierTest methodsFor: 'as yet unclassified' stamp: 'ps 6/11/2018 20:44:38'!
 test01CanNotCheckoutAnEmptyCart
@@ -184,11 +192,11 @@ test04CheckoutRegistersASale
 	self assert: salesBook notEmpty.
 	self assert: salesBook first total = total.! !
 
-!CashierTest methodsFor: 'as yet unclassified' stamp: 'ps 6/11/2018 20:56:49'!
-test05OnMerchantProcessorPaymentRefusalShouldNotAddSaleToSalesBook
+!CashierTest methodsFor: 'as yet unclassified' stamp: 'ps 6/14/2018 15:07:02'!
+test05OnCreditCardLackingFundsCashierShouldNotAddSaleToSalesBook
 	| cart cashier salesBook |
 	
-	response := [^self error: 'La tarjeta es robada'] .
+	response := [^self error: self notEnoughCreditErrorMessage ] .
 	
 	cart := testObjectsFactory createCart.
 	cart add: testObjectsFactory itemSellByTheStore.
@@ -204,7 +212,30 @@ test05OnMerchantProcessorPaymentRefusalShouldNotAddSaleToSalesBook
 		raise: Error 
 				withExceptionDo: 
 				[ :anError | self assert: salesBook isEmpty .
-							 self assert: anError messageText equals: 'La tarjeta es robada' ].
+							 self assert: anError messageText equals:self notEnoughCreditErrorMessage ].
+					! !
+
+!CashierTest methodsFor: 'as yet unclassified' stamp: 'ps 6/14/2018 15:06:20'!
+test06OnStolenCreditCardCashierShouldNotAddSaleToSalesBook
+	| cart cashier salesBook |
+	
+	response := [^self error: self stolenCardErrorMessage ] .
+	
+	cart := testObjectsFactory createCart.
+	cart add: testObjectsFactory itemSellByTheStore.
+	salesBook := OrderedCollection new.
+ 
+	cashier:= Cashier 
+		toCheckout: cart 
+		charging: testObjectsFactory notExpiredCreditCard
+		on: testObjectsFactory today
+		registeringOn: salesBook
+		with: self.
+	self should: [cashier checkOut. ^self fail] 
+		raise: Error 
+				withExceptionDo: 
+				[ :anError | self assert: salesBook isEmpty .
+							 self assert: anError messageText equals: self stolenCardErrorMessage ].
 					! !
 
 
